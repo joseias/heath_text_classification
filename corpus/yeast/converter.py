@@ -48,7 +48,7 @@ def load_yeast_abb(path):
 def load_pudmed():
     return None
 
-path = "E:\\Work\\01_DL\\05_UA\\TextClassification\\Corpus\\yeast_abbrev_unlabeled.txt"
+path = "yeast_abbrev_unlabeled.txt"
 df = load_yeast_abb(path)
 print(df.shape)
-df.to_csv("E:\\Work\\01_DL\\05_UA\\TextClassification\\Corpus\\yeast_abbrev_unlabeled.csv", index=False)
+df.to_csv("yeast_abbrev_unlabeled.csv", index=False)
