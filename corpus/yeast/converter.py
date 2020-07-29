@@ -1,54 +1,38 @@
+import re
 import pandas as pd
 
 def load_yeast_abb(path):
+    MIN_TEXT_LENGTH = 200
+
     # read the data
-    sep = "\n"
-
-    SOURCE = "source"
-    TITLE = "title"
-    AUTHORS = "authors"
-    INST = "institution"
-    TEXT = "text"
-    REF = "ref"
-    NEWDOC1 = "newdoc1"
-    NEWDOC2 = "newdoc2"
-
-    trans = {SOURCE:TITLE, 
-            TITLE:AUTHORS, 
-            AUTHORS:INST, 
-            INST:TEXT,
-            TEXT:REF,
-            REF:NEWDOC1,
-            NEWDOC1:NEWDOC2,
-            NEWDOC2:SOURCE}
-            
-    exs = set([NEWDOC1, NEWDOC2])
-
-    docs = []
     with open(path) as f:
-        doc = {SOURCE:[], TITLE:[], AUTHORS:[], INST:[], TEXT:[], REF:[]}
-        state = SOURCE
-        for line in f:
-            if line != sep:
-                if state not in exs:
-                    doc[state].append(line.replace("\n",""))
-            else:
-                if state == REF:
-                    for key in doc.keys():
-                        doc[key] = " ".join(doc[key])
-                    docs.append(doc)
-                    doc = {SOURCE:[], TITLE:[], AUTHORS:[], INST:[], TEXT:[], REF:[]}        
-                state = trans[state]
-        # add the last doc since there is no blank line at the EOF
-        docs.append(doc)
+        # read all the content, this is very inefficient
+        content = f.read() 
+        # workaround for some documents using four \n as separator instead of 3
+        docs = []
+        # split by "PMID:", as document separator
+        for rawdoc in re.split(r"[\n]{3,}", content):
+            # split by "\n\n", field separator
+            doc = re.split(r"[\n]{2,}", rawdoc)
+            
+            # sort by lenght, text must be the longest
+            doc = sorted(doc, key=len, reverse=True)
 
-    df = pd.DataFrame(docs, columns=[SOURCE, TITLE, AUTHORS, INST, TEXT, REF])
+            # remove some extra "\n" in some documents, for example titles spawning more than one row
+            text = re.sub(r"[\n]{1,}", " ", doc[0]).strip()
+
+            # text is missin in some documents...
+            if len(text) > MIN_TEXT_LENGTH:
+                docs.append(text)
+
+    df = pd.DataFrame(docs, columns=["text"])
     return df
 
 def load_pudmed():
     return None
 
-path = "yeast_abbrev_unlabeled.txt"
-df = load_yeast_abb(path)
-print(df.shape)
-df.to_csv("yeast_abbrev_unlabeled.csv", index=False)
+inpath = "yeast_abbrev_unlabeled.txt"
+outpath = "yeast_abbrev_unlabeled.csv"
+
+df = load_yeast_abb(inpath)
+df.to_csv(outpath, index=False)
